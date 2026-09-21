@@ -1,0 +1,16 @@
+{
+  "name": "deanking-smartdevice-city",
+  "version": "1.0.0",
+  "description": "DeanKing Smartdevice City e-commerce checkout with Paystack",
+  "main": "server.js",
+  "scripts": {
+    "start": "\"C:\\Program Files\\nodejs\\node.exe\" server.js",
+    "dev": "\"C:\\Program Files\\nodejs\\node.exe\" server.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.7.0"
+  }
+}
