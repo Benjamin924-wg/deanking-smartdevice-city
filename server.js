@@ -39,6 +39,10 @@ const apiLimiter = rateLimit({
 
 app.use('/api', apiLimiter);
 
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'DeanKing Smartdevice City backend is running.' });
+});
+
 const allowedStaticExtensions = new Set(['.html', '.css', '.js', '.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.ico', '.json']);
 app.use((req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
@@ -66,10 +70,6 @@ app.use(express.static(__dirname, {
     }
   }
 }));
-
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'DeanKing Smartdevice City backend is running.' });
-});
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'DeanKing-Smartdevice-City.html'));
