@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Products | DeanKing Smartdevice City</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="brand" aria-label="DeanKing Smartdevice City logo">
+            <div class="logo-mark">DK</div>
+            <div class="brand-text">
+                <span class="brand-name">DeanKing</span>
+                <small>Smartdevice City</small>
+            </div>
+        </div>
+        <p class="welcome-message">Welcome to DeanKing Smartdevice City</p>
+        <nav>
+            <a href="DeanKing-Smartdevice-City.html">Shop</a>
+            <a href="product-manager.html" aria-current="page">Manage Products</a>
+            <a href="cart.html">Cart</a>
+        </nav>
+    </header>
+
+    <main class="manager-section">
+        <section id="owner-login-section" class="product-form owner-login">
+            <h1>Owner Login</h1>
+            <p class="manager-intro">This area is private. Sign in to manage the shop catalog.</p>
+            <form id="owner-login-form">
+                <label for="owner-password">Owner password</label>
+                <input id="owner-password" type="password" autocomplete="current-password" required>
+                <button type="submit">Sign In</button>
+                <p id="owner-login-status" class="form-status" role="alert" aria-live="polite"></p>
+            </form>
+        </section>
+
+        <section id="product-manager-panel" hidden>
+            <h1>Product Manager</h1>
+            <p class="manager-intro">Add new arrivals to your shop or update products already listed.</p>
+            <button type="button" id="owner-logout-button" class="secondary-button owner-logout">Sign Out</button>
+
+            <form id="product-form" class="product-form">
+            <input type="hidden" id="product-id">
+            <label for="product-name">Product name</label>
+            <input id="product-name" type="text" placeholder="Example: Wireless keyboard" required>
+
+            <label for="product-description">Product information</label>
+            <textarea id="product-description" placeholder="Describe the product..." required></textarea>
+
+            <label for="product-price">Price (₦)</label>
+            <input id="product-price" type="number" min="1" step="1" placeholder="15000" required>
+
+            <label for="product-image">Image path or URL</label>
+            <input id="product-image" type="text" placeholder="images/keyboard.jpg" required>
+
+            <div class="form-actions">
+                <button type="submit" id="save-product-button">Add Product</button>
+                <button type="button" id="cancel-edit-button" class="secondary-button" hidden>Cancel Edit</button>
+            </div>
+            <p id="product-form-status" class="form-status" role="status" aria-live="polite"></p>
+            </form>
+
+            <section class="managed-products">
+                <h2>Current products</h2>
+                <div id="managed-product-list"></div>
+            </section>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

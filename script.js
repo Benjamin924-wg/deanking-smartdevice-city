@@ -1,5 +1,183 @@
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
+const defaultProducts = [
+    { id: "phone-cases", name: "Phone cases", description: "Protect your phone with stylish and durable cases.", price: 3000, image: "images/Phone cases.jpg" },
+    { id: "chargers", name: "Chargers", description: "Fast and reliable phone chargers for your devices.", price: 7000, image: "images/Charger.jpg" },
+    { id: "power-banks", name: "Power Banks", description: "Keep your phone powered anywhere you go.", price: 45000, image: "images/Power bank.jpg" },
+    { id: "earpieces", name: "Earpieces", description: "Enjoy clear sound and comfortable listening.", price: 5000, image: "images/Earpieses.jpg" }
+];
+
+let products = [];
+
+async function loadProducts() {
+    try {
+        const response = await fetch("/api/products", { cache: "no-store" });
+        if (!response.ok) throw new Error("Unable to load products.");
+        products = await response.json();
+        renderProducts();
+        renderManagedProducts();
+    } catch (error) {
+        console.error(error);
+        const productGrid = document.getElementById("product-grid");
+        if (productGrid) productGrid.innerHTML = "<p>Products are temporarily unavailable. Please try again.</p>";
+    }
+}
+
+function renderProducts() {
+    const productGrid = document.getElementById("product-grid");
+    if (!productGrid) return;
+
+    productGrid.innerHTML = "";
+    products.forEach(function(product) {
+        const card = document.createElement("article");
+        card.className = "product";
+
+        const image = document.createElement("img");
+        image.src = product.image;
+        image.alt = product.name;
+
+        const name = document.createElement("h3");
+        name.textContent = product.name;
+        const description = document.createElement("p");
+        description.textContent = product.description;
+        const price = document.createElement("p");
+        price.innerHTML = "<strong>₦" + Number(product.price).toLocaleString() + "</strong>";
+        const quantityLabel = document.createElement("label");
+        quantityLabel.textContent = "Quantity:";
+        quantityLabel.htmlFor = "quantity-" + product.id;
+        const quantity = document.createElement("input");
+        quantity.type = "number";
+        quantity.id = "quantity-" + product.id;
+        quantity.value = "1";
+        quantity.min = "1";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Add to Cart";
+        button.onclick = function() {
+            addToCart(product.name, product.price, product.image, quantity.value);
+        };
+
+        card.append(image, name, description, price, quantityLabel, quantity, button);
+        productGrid.appendChild(card);
+    });
+}
+
+function renderManagedProducts() {
+    const list = document.getElementById("managed-product-list");
+    if (!list) return;
+    list.innerHTML = "";
+
+    products.forEach(function(product) {
+        const item = document.createElement("div");
+        item.className = "managed-product";
+        item.innerHTML = "<div><strong></strong><span></span></div><div class=\"managed-product-actions\"><button type=\"button\" class=\"edit-product\">Edit</button><button type=\"button\" class=\"delete-product secondary-button\">Delete</button></div>";
+        item.querySelector("strong").textContent = product.name;
+        item.querySelector("span").textContent = "₦" + Number(product.price).toLocaleString() + " — " + product.description;
+        item.querySelector(".edit-product").onclick = function() { editProduct(product.id); };
+        item.querySelector(".delete-product").onclick = function() { deleteProduct(product.id); };
+        list.appendChild(item);
+    });
+}
+
+function editProduct(id) {
+    const product = products.find(function(item) { return item.id === id; });
+    if (!product) return;
+    document.getElementById("product-id").value = product.id;
+    document.getElementById("product-name").value = product.name;
+    document.getElementById("product-description").value = product.description;
+    document.getElementById("product-price").value = product.price;
+    document.getElementById("product-image").value = product.image;
+    document.getElementById("save-product-button").textContent = "Save Changes";
+    document.getElementById("cancel-edit-button").hidden = false;
+    document.getElementById("product-name").focus();
+}
+
+function resetProductForm() {
+    document.getElementById("product-form").reset();
+    document.getElementById("product-id").value = "";
+    document.getElementById("save-product-button").textContent = "Add Product";
+    document.getElementById("cancel-edit-button").hidden = true;
+}
+
+async function deleteProduct(id) {
+    const product = products.find(function(item) { return item.id === id; });
+    if (!product || !window.confirm("Delete " + product.name + "?")) return;
+    const response = await fetch("/api/products/" + encodeURIComponent(id), { method: "DELETE" });
+    if (!response.ok) {
+        document.getElementById("product-form-status").textContent = "Unable to delete product.";
+        return;
+    }
+    await loadProducts();
+}
+
+async function setupProductManager() {
+    const loginSection = document.getElementById("owner-login-section");
+    const managerPanel = document.getElementById("product-manager-panel");
+    const loginForm = document.getElementById("owner-login-form");
+    if (!loginForm || !loginSection || !managerPanel) return;
+
+    const setAuthenticated = function(authenticated) {
+        loginSection.hidden = authenticated;
+        managerPanel.hidden = !authenticated;
+    };
+
+    const sessionResponse = await fetch("/api/owner/session", { cache: "no-store" });
+    setAuthenticated((await sessionResponse.json()).authenticated);
+    if (!managerPanel.hidden) await loadProducts();
+
+    loginForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+        const status = document.getElementById("owner-login-status");
+        const response = await fetch("/api/owner/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: document.getElementById("owner-password").value })
+        });
+        if (!response.ok) {
+            status.textContent = "Incorrect owner password.";
+            return;
+        }
+        loginForm.reset();
+        status.textContent = "";
+        setAuthenticated(true);
+        await loadProducts();
+    });
+
+    document.getElementById("owner-logout-button").onclick = async function() {
+        await fetch("/api/owner/logout", { method: "POST" });
+        setAuthenticated(false);
+    };
+
+    const form = document.getElementById("product-form");
+    form.addEventListener("submit", function(event) {
+        event.preventDefault();
+        const id = document.getElementById("product-id").value;
+        const product = {
+            id: id || "product-" + Date.now(),
+            name: document.getElementById("product-name").value.trim(),
+            description: document.getElementById("product-description").value.trim(),
+            price: Number(document.getElementById("product-price").value),
+            image: document.getElementById("product-image").value.trim()
+        };
+        if (!product.name || !product.description || !product.image || product.price <= 0) return;
+        const request = fetch(id ? "/api/products/" + encodeURIComponent(id) : "/api/products", {
+            method: id ? "PUT" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(product)
+        });
+        request.then(async function(response) {
+            if (!response.ok) throw new Error("Unable to save product.");
+            await loadProducts();
+            resetProductForm();
+            document.getElementById("product-form-status").textContent = "Product saved successfully.";
+        }).catch(function(error) {
+            document.getElementById("product-form-status").textContent = error.message;
+        });
+    });
+    document.getElementById("cancel-edit-button").onclick = resetProductForm;
+    renderManagedProducts();
+}
+
 function addToCart(productName, price, image, quantity) {
 
     quantity = Number(quantity) || 1;
@@ -112,93 +290,6 @@ function clearCart() {
 }
 
 
-function showPaymentStatus() {
-    const params = new URLSearchParams(window.location.search);
-    const paymentStatus = params.get("payment");
-    const reference = params.get("reference");
-
-    if (paymentStatus === "success" && reference) {
-        alert("Payment successful! Reference: " + reference + "\nYour order has been confirmed.");
-        clearCart();
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-}
-
-function startPaystackCheckout() {
-    const checkoutStatus = document.getElementById("checkout-status");
-    const showCheckoutError = function(message) {
-        if (checkoutStatus) {
-            checkoutStatus.textContent = message;
-            checkoutStatus.style.color = "#b42318";
-        }
-        alert(message);
-    };
-
-    if (window.location.protocol === "file:") {
-        showCheckoutError("Card payment needs the website server. Open http://localhost:3000 or use Bank Transfer instead.");
-        return;
-    }
-
-    const emailInput = document.getElementById("checkoutEmail");
-    const nameInput = document.getElementById("checkoutName");
-    const email = emailInput ? emailInput.value.trim() : "";
-    const customerName = nameInput ? nameInput.value.trim() : "";
-
-    if (!email || !email.includes("@")) {
-        if (emailInput) emailInput.focus();
-        showCheckoutError("A valid email is required to continue with payment.");
-        return;
-    }
-
-    if (!customerName) {
-        if (nameInput) nameInput.focus();
-        showCheckoutError("Your name is required to continue with payment.");
-        return;
-    }
-
-    let total = 0;
-    cart.forEach(function(item) {
-        const quantity = Number(item.quantity) || 1;
-        const price = Number(item.price) || 0;
-        total += price * quantity;
-    });
-
-    fetch("/api/create-payment", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            email: email,
-            name: customerName,
-            amount: total,
-            metadata: {
-                cart: cart.map(function(item) {
-                    return item.name + " x" + (Number(item.quantity) || 1);
-                })
-            }
-        })
-    })
-    .then(function(response) {
-        if (!response.ok) {
-            return response.json().then(function(errorData) {
-                throw new Error(errorData.error || "Unable to start payment.");
-            });
-        }
-        return response.json();
-    })
-    .then(function(data) {
-        if (!data.authorization_url) {
-            throw new Error(data.error || "Unable to start payment.");
-        }
-
-        window.location.href = data.authorization_url;
-    })
-    .catch(function(error) {
-        showCheckoutError(error.message || "Payment could not be started. Please try again. You can also choose Bank Transfer instead.");
-    });
-}
-
 function checkout() {
 
     if (cart.length === 0) {
@@ -216,11 +307,6 @@ function checkout() {
     }
 
     const paymentMethod = selectedPayment.value;
-
-    if (paymentMethod === "Card") {
-        startPaystackCheckout();
-        return;
-    }
 
     let message = "Hello DeanKing Smartdevice City!%0A%0A";
     message += "I want to place an order.%0A%0A";
@@ -252,8 +338,9 @@ function checkout() {
 }
 
 
-showPaymentStatus();
 displayCart();
+setupProductManager();
+loadProducts();
 function sendProductRequest() {
 
     const name = document.getElementById("customerName").value;

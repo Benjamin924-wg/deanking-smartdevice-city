@@ -3,6 +3,7 @@ const express = require('express');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
@@ -13,6 +14,44 @@ const hasPaystackSecret = Boolean(
   PAYSTACK_SECRET_KEY &&
   !PAYSTACK_SECRET_KEY.toLowerCase().includes('your_')
 );
+const OWNER_PASSWORD = process.env.PRODUCT_MANAGER_PASSWORD || 'DeanKingOwner2026!';
+const productStorePath = path.join(__dirname, 'products.json');
+const defaultProducts = [
+  { id: 'phone-cases', name: 'Phone cases', description: 'Protect your phone with stylish and durable cases.', price: 3000, image: 'images/Phone cases.jpg' },
+  { id: 'chargers', name: 'Chargers', description: 'Fast and reliable phone chargers for your devices.', price: 7000, image: 'images/Charger.jpg' },
+  { id: 'power-banks', name: 'Power Banks', description: 'Keep your phone powered anywhere you go.', price: 45000, image: 'images/Power bank.jpg' },
+  { id: 'earpieces', name: 'Earpieces', description: 'Enjoy clear sound and comfortable listening.', price: 5000, image: 'images/Earpieses.jpg' }
+];
+const sessions = new Map();
+
+function getProducts() {
+  try {
+    if (!fs.existsSync(productStorePath)) {
+      fs.writeFileSync(productStorePath, JSON.stringify(defaultProducts, null, 2));
+    }
+    const products = JSON.parse(fs.readFileSync(productStorePath, 'utf8'));
+    return Array.isArray(products) ? products : defaultProducts;
+  } catch (error) {
+    console.error('Unable to read product catalog:', error.message);
+    return defaultProducts;
+  }
+}
+
+function saveProducts(products) {
+  fs.writeFileSync(productStorePath, JSON.stringify(products, null, 2));
+}
+
+function isOwner(req) {
+  const token = req.headers.cookie?.match(/(?:^|;\s*)owner_session=([^;]+)/)?.[1];
+  return Boolean(token && sessions.has(token));
+}
+
+function requireOwner(req, res, next) {
+  if (!isOwner(req)) {
+    return res.status(401).json({ error: 'Owner login required.' });
+  }
+  next();
+}
 
 app.disable('x-powered-by');
 app.disable('etag');
@@ -41,6 +80,83 @@ app.use('/api', apiLimiter);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'DeanKing Smartdevice City backend is running.' });
+});
+
+app.get('/api/products', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json(getProducts());
+});
+
+app.post('/api/owner/login', (req, res) => {
+  const password = typeof req.body?.password === 'string' ? req.body.password : '';
+  const expected = Buffer.from(OWNER_PASSWORD);
+  const received = Buffer.from(password);
+  const valid = expected.length === received.length && crypto.timingSafeEqual(expected, received);
+
+  if (!valid) {
+    return res.status(401).json({ error: 'Incorrect owner password.' });
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  sessions.set(token, Date.now());
+  res.setHeader('Set-Cookie', `owner_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800`);
+  res.json({ authenticated: true });
+});
+
+app.get('/api/owner/session', (req, res) => {
+  res.json({ authenticated: isOwner(req) });
+});
+
+app.post('/api/owner/logout', (req, res) => {
+  const token = req.headers.cookie?.match(/(?:^|;\s*)owner_session=([^;]+)/)?.[1];
+  if (token) sessions.delete(token);
+  res.setHeader('Set-Cookie', 'owner_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');
+  res.json({ authenticated: false });
+});
+
+app.post('/api/products', requireOwner, (req, res) => {
+  const { name, description, price, image } = req.body || {};
+  if (!name || !description || !image || !Number.isFinite(Number(price)) || Number(price) <= 0) {
+    return res.status(400).json({ error: 'Valid product name, information, price, and image are required.' });
+  }
+  const product = {
+    id: `product-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+    name: String(name).trim(),
+    description: String(description).trim(),
+    price: Number(price),
+    image: String(image).trim()
+  };
+  const products = getProducts();
+  products.push(product);
+  saveProducts(products);
+  res.status(201).json(product);
+});
+
+app.put('/api/products/:id', requireOwner, (req, res) => {
+  const { name, description, price, image } = req.body || {};
+  if (!name || !description || !image || !Number.isFinite(Number(price)) || Number(price) <= 0) {
+    return res.status(400).json({ error: 'Valid product name, information, price, and image are required.' });
+  }
+  const products = getProducts();
+  const index = products.findIndex((product) => product.id === req.params.id);
+  if (index === -1) return res.status(404).json({ error: 'Product not found.' });
+  products[index] = {
+    id: req.params.id,
+    name: String(name).trim(),
+    description: String(description).trim(),
+    price: Number(price),
+    image: String(image).trim()
+  };
+  saveProducts(products);
+  res.json(products[index]);
+});
+
+app.delete('/api/products/:id', requireOwner, (req, res) => {
+  const products = getProducts();
+  const remaining = products.filter((product) => product.id !== req.params.id);
+  if (remaining.length === products.length) return res.status(404).json({ error: 'Product not found.' });
+  saveProducts(remaining);
+  res.status(204).end();
 });
 
 const allowedStaticExtensions = new Set(['.html', '.css', '.js', '.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.ico', '.json']);

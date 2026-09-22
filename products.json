@@ -1,0 +1,30 @@
+[
+  {
+    "id": "phone-cases",
+    "name": "Phone cases",
+    "description": "Protect your phone with stylish and durable cases.",
+    "price": 3000,
+    "image": "images/Phone cases.jpg"
+  },
+  {
+    "id": "chargers",
+    "name": "Chargers",
+    "description": "Fast and reliable phone chargers for your devices.",
+    "price": 7000,
+    "image": "images/Charger.jpg"
+  },
+  {
+    "id": "power-banks",
+    "name": "Power Banks",
+    "description": "Keep your phone powered anywhere you go.",
+    "price": 45000,
+    "image": "images/Power bank.jpg"
+  },
+  {
+    "id": "earpieces",
+    "name": "Earpieces",
+    "description": "Enjoy clear sound and comfortable listening.",
+    "price": 5000,
+    "image": "images/Earpieses.jpg"
+  }
+]

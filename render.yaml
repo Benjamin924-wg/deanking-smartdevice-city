@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: deanking-smartdevice-city
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PRODUCT_MANAGER_PASSWORD
+        sync: false

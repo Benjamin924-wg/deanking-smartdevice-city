@@ -15,11 +15,13 @@
                     <small>Smartdevice City</small>
                 </div>
             </div>
+            <p class="welcome-message">Welcome to DeanKing Smartdevice City</p>
             <nav>
                 <a href="DeanKing-Smartdevice-City.html">Home</a>
                 <a href="DeanKing-Smartdevice-City.html">Shop</a>
                 <a href="DeanKing-Smartdevice-City.html#about">About</a>
                 <a href="DeanKing-Smartdevice-City.html#contact">Contact</a>
+                <a href="product-manager.html">Manage Products</a>
                 <a href="cart.html">Cart</a>
             </nav>
         </header>
@@ -32,47 +34,7 @@
 
         <section class="products" id="products">
             <h2>Shop Our Products</h2>
-            <div class="product-grid">
-                <div class="product">
-                    <img src="images/Phone cases.jpg" alt="Phone cases">
-                    <h3>Phone cases</h3>
-                    <p>Protect your phone with stylish and durable cases.</p>
-                    <p><strong>₦3,000</strong></p>
-                    <label>Quantity:</label>
-                    <input type="number" id="phoneCasesQuantity" value="1" min="1">
-                    <button onclick="addToCart('Phone cases', 3000, 'images/Phone cases.jpg', Number(document.getElementById('phoneCasesQuantity').value))">Add to Cart</button>
-                </div>
-
-                <div class="product">
-                    <img src="images/Charger.jpg" alt="Charger">
-                    <h3>Chargers</h3>
-                    <p>Fast and reliable phone chargers for your devices.</p>
-                    <p><strong>₦7,000</strong></p>
-                    <label>Quantity:</label>
-                    <input type="number" id="chargersQuantity" value="1" min="1">
-                    <button onclick="addToCart('Chargers', 7000, 'images/Charger.jpg', Number(document.getElementById('chargersQuantity').value))">Add to Cart</button>
-                </div>
-
-                <div class="product">
-                    <img src="images/Power bank.jpg" alt="Power bank">
-                    <h3>Power Banks</h3>
-                    <p>Keep your phone powered anywhere you go.</p>
-                    <p><strong>₦45,000</strong></p>
-                    <label>Quantity:</label>
-                    <input type="number" id="powerbankQuantity" value="1" min="1">
-                    <button onclick="addToCart('Power bank', 45000, 'images/Power bank.jpg', Number(document.getElementById('powerbankQuantity').value))">Add to Cart</button>
-                </div>
-
-                <div class="product">
-                    <img src="images/Earpieses.jpg" alt="Earpieces">
-                    <h3>Earpieces</h3>
-                    <p>Enjoy clear sound and comfortable listening.</p>
-                    <p><strong>₦5,000</strong></p>
-                    <label>Quantity:</label>
-                    <input type="number" id="earpiecesQuantity" value="1" min="1">
-                    <button onclick="addToCart('Earpieces', 5000, 'images/Earpieses.jpg', Number(document.getElementById('earpiecesQuantity').value))">Add to Cart</button>
-                </div>
-            </div>
+            <div class="product-grid" id="product-grid"></div>
         </section>
 
         <section class="request-section" id="request">
